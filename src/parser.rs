@@ -901,6 +901,13 @@ impl<'a> Parser<'a> {
                 Keyword::XOR => Some(BinaryOperator::Xor),
                 _ => None,
             },
+            Token::HyphenRight => { Some(BinaryOperator::HyphenRight) },
+            Token::HyphenRightRight => { Some(BinaryOperator::HyphenRightRight) },
+            Token::Question => { Some(BinaryOperator::Question) },
+            Token::AtRight => { Some(BinaryOperator::AtRight) },
+            Token::AtLeft => { Some(BinaryOperator::AtLeft) },
+            Token::DoubleAmpersand => { Some(BinaryOperator::DoubleAmpersand) },
+            
             _ => None,
         };
 
@@ -1065,7 +1072,10 @@ impl<'a> Parser<'a> {
             | Token::TildeAsterisk
             | Token::ExclamationMarkTilde
             | Token::ExclamationMarkTildeAsterisk
-            | Token::Spaceship => Ok(20),
+            | Token::Spaceship
+            | Token::RArrow
+            | Token::HyphenRight | Token::HyphenRightRight | Token::Question | Token::AtRight | Token::AtLeft
+            | Token::DoubleAmpersand => Ok(20),
             Token::Pipe => Ok(21),
             Token::Caret | Token::Sharp | Token::ShiftRight | Token::ShiftLeft => Ok(22),
             Token::Ampersand => Ok(23),

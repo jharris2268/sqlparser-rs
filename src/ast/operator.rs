@@ -86,6 +86,12 @@ pub enum BinaryOperator {
     PGRegexIMatch,
     PGRegexNotMatch,
     PGRegexNotIMatch,
+    HyphenRight,
+    HyphenRightRight,
+    Question,
+    AtRight,
+    AtLeft,
+    DoubleAmpersand
 }
 
 impl fmt::Display for BinaryOperator {
@@ -121,6 +127,12 @@ impl fmt::Display for BinaryOperator {
             BinaryOperator::PGRegexIMatch => "~*",
             BinaryOperator::PGRegexNotMatch => "!~",
             BinaryOperator::PGRegexNotIMatch => "!~*",
+            BinaryOperator::HyphenRight => "->",
+            BinaryOperator::HyphenRightRight => "->>",
+            BinaryOperator::Question => "?",
+            BinaryOperator::AtRight => "@>",
+            BinaryOperator::AtLeft => "@<",
+            BinaryOperator::DoubleAmpersand => "&&",
         })
     }
 }

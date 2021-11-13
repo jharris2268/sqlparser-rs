@@ -139,6 +139,19 @@ pub enum Token {
     PGSquareRoot,
     /// `||/` , a cube root math operator in PostgreSQL
     PGCubeRoot,
+    /// Double Ampersand &&
+    DoubleAmpersand,
+    /// `->`, PostgreSQL hstore/json access 
+    HyphenRight,
+    /// `->>`, PostgreSQL json access value
+    HyphenRightRight,
+    /// `?` , PostgreSQL hstore/json key present
+    Question,
+    /// `@>`, PostgreSQL hstore/json key value present
+    AtRight,
+    /// `@<`, PostgreSQL hstore/json key value present reversed
+    AtLeft,
+    
 }
 
 impl fmt::Display for Token {
@@ -194,6 +207,12 @@ impl fmt::Display for Token {
             Token::ShiftRight => f.write_str(">>"),
             Token::PGSquareRoot => f.write_str("|/"),
             Token::PGCubeRoot => f.write_str("||/"),
+            Token::DoubleAmpersand => f.write_str("&&"),
+            Token::HyphenRight => f.write_str("->"),
+            Token::HyphenRightRight => f.write_str("->>"),
+            Token::Question => f.write_str("?"),
+            Token::AtRight => f.write_str("@>"),
+            Token::AtLeft => f.write_str("@<"),
         }
     }
 }
@@ -375,6 +394,21 @@ impl<'a> Tokenizer<'a> {
                             Ok(Some(Token::make_word(&s, None)))
                         }
                     }
+                },
+                'E' => {
+                    chars.next(); // consume, to check the next char
+                    match chars.peek() {
+                        Some('\'') => {
+                            // E'...' - a <national character string literal>
+                            let s = self.tokenize_single_quoted_string(chars)?;
+                            Ok(Some(Token::NationalStringLiteral(s)))
+                        }
+                        _ => {
+                            // regular identifier starting with an "N"
+                            let s = self.tokenize_word('E', chars);
+                            Ok(Some(Token::make_word(&s, None)))
+                        }
+                    }
                 }
                 // The spec only allows an uppercase 'X' to introduce a hex
                 // string, but PostgreSQL, at least, allows a lowercase 'x' too.
@@ -476,7 +510,19 @@ impl<'a> Tokenizer<'a> {
                                 prefix: "--".to_owned(),
                                 comment,
                             })))
-                        }
+                        },
+                        Some('>') => {
+                            chars.next(); //consume first >
+                            match chars.peek() {
+                                Some('>') => {
+                                    chars.next(); //consume second >
+                                    Ok(Some(Token::HyphenRightRight))
+                                },
+                                _ => Ok(Some(Token::HyphenRight)),
+                            }
+                        },
+                            
+                            
                         // a regular '-' operator
                         _ => Ok(Some(Token::Minus)),
                     }
@@ -575,7 +621,13 @@ impl<'a> Tokenizer<'a> {
                 '\\' => self.consume_and_return(chars, Token::Backslash),
                 '[' => self.consume_and_return(chars, Token::LBracket),
                 ']' => self.consume_and_return(chars, Token::RBracket),
-                '&' => self.consume_and_return(chars, Token::Ampersand),
+                '&' => {
+                    chars.next();
+                    match chars.peek() {
+                        Some('&') => self.consume_and_return(chars, Token::DoubleAmpersand),
+                        _ => Ok(Some(Token::Ampersand)),
+                    }
+                },
                 '^' => self.consume_and_return(chars, Token::Caret),
                 '{' => self.consume_and_return(chars, Token::LBrace),
                 '}' => self.consume_and_return(chars, Token::RBrace),
@@ -595,7 +647,17 @@ impl<'a> Tokenizer<'a> {
                     }
                 }
                 '#' => self.consume_and_return(chars, Token::Sharp),
-                '@' => self.consume_and_return(chars, Token::AtSign),
+                '@' => {
+                    chars.next();
+                    match chars.peek() {
+                        Some('>') => self.consume_and_return(chars, Token::AtRight),
+                        Some('<') => self.consume_and_return(chars, Token::AtLeft),
+                        
+                        _ => Ok(Some(Token::AtSign))
+                    }
+                },
+                '?' => self.consume_and_return(chars, Token::Question),
+                    
                 other => self.consume_and_return(chars, Token::Char(other)),
             },
             None => Ok(None),
